@@ -1,0 +1,17 @@
+require("dotenv").config();
+const express=require("express"),helmet=require("helmet"),cors=require("cors"),rateLimit=require("express-rate-limit");
+const {collectDefaultMetrics,register}=require("prom-client");
+const signalsRouter=require("./routes/signals"),tradesRouter=require("./routes/trades"),statusRouter=require("./routes/status");
+const {authMiddleware}=require("./middleware/auth"),logger=require("./services/logger");
+const app=express();
+app.use(helmet()); app.use(cors({origin:false})); app.use(express.json({limit:"100kb"}));
+app.use(rateLimit({windowMs:60000,max:120,standardHeaders:true,legacyHeaders:false}));
+collectDefaultMetrics();
+app.get("/health",(req,res)=>res.json({status:"ok",ts:new Date().toISOString()}));
+app.get("/prometheus",async(req,res)=>{res.set("Content-Type",register.contentType);res.end(await register.metrics());});
+app.use("/api",authMiddleware);
+app.use("/api/signals",signalsRouter); app.use("/api/trades",tradesRouter); app.use("/api/status",statusRouter);
+app.use((err,req,res,_next)=>{logger.error("unhandled",{error:err.message});res.status(500).json({error:"Internal server error"}); });
+const PORT=process.env.PORT||3000;
+app.listen(PORT,"0.0.0.0",()=>logger.info("server_start",{port:PORT}));
+module.exports=app;

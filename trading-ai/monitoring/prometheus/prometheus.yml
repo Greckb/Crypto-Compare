@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+scrape_configs:
+  - job_name: "node-api"
+    static_configs:
+      - targets: ["node-api:3000"]
+    metrics_path: "/prometheus"
+  - job_name: "python-ml"
+    static_configs:
+      - targets: ["python-ml:5000"]
+    metrics_path: "/metrics"
+alerting:
+  alertmanagers: []
+rule_files: []
